@@ -1,0 +1,37 @@
+name: Gerar lock.exe
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar ferramentas
+        run: pip install cryptography pyinstaller
+
+      - name: Teste rapido (compactar e extrair)
+        shell: python
+        run: |
+          import os, lock
+          os.makedirs("t/sub", exist_ok=True)
+          open("t/sub/a.txt", "w").write("ola")
+          lock.pack("t", "t.ziplock", "senha")
+          lock.unpack("t.ziplock", "saida", "senha")
+          assert open("saida/t/sub/a.txt").read() == "ola"
+          print("teste ok")
+
+      - name: Gerar o executavel
+        run: pyinstaller --onefile --noconsole --name lock lock.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lock-exe
+          path: dist/lock.exe
